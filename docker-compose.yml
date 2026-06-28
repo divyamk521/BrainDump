@@ -1,16 +1,17 @@
+# infra/docker-compose.dev.yml
+
 version: "3.9"
 
 services:
   postgres:
     image: postgres:15
     container_name: braindump-postgres
-
     restart: unless-stopped
 
     environment:
+      POSTGRES_USER: braindump
+      POSTGRES_PASSWORD: braindump
       POSTGRES_DB: braindump
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
 
     ports:
       - "5432:5432"
@@ -19,16 +20,44 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d braindump"]
+      test: ["CMD-SHELL", "pg_isready -U braindump -d braindump"]
       interval: 10s
       timeout: 5s
       retries: 5
 
+    networks:
+      - braindump-network
+
+
+  redis:
+    image: redis:7
+    container_name: braindump-redis
+    restart: unless-stopped
+
+    ports:
+      - "6379:6379"
+
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+
+    volumes:
+      - redis_data:/data
+
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+    networks:
+      - braindump-network
+
+
   qdrant:
     image: qdrant/qdrant:latest
-
     container_name: braindump-qdrant
-
     restart: unless-stopped
 
     ports:
@@ -45,36 +74,22 @@ services:
           "wget",
           "--spider",
           "-q",
-          "http://localhost:6333/health"
+          "http://localhost:6333/healthz"
         ]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
 
-  redis:
-    image: redis:7
+    networks:
+      - braindump-network
 
-    container_name: braindump-redis
-
-    restart: unless-stopped
-
-    command: redis-server --appendonly yes
-
-    ports:
-      - "6379:6379"
-
-    volumes:
-      - redis_data:/data
-
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
 
 volumes:
   postgres_data:
-
+  redis_data:
   qdrant_data:
 
-  redis_data:
+
+networks:
+  braindump-network:
+    driver: bridge

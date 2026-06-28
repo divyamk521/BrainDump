@@ -1,68 +1,217 @@
 # BrainDump
 
-BrainDump is a multimodal AI-powered second brain.
+BrainDump is a production-grade multimodal AI-powered **Second Brain** that allows users to capture, organize, search, and chat with everything they know.
 
-Users can store:
+Instead of storing information across bookmarks, screenshots, PDFs, notes, voice memos, and articles, BrainDump centralizes everything into a single knowledge base powered by Retrieval-Augmented Generation (RAG).
 
-- Text
+Users can upload:
+
+- Text notes
 - PDFs
 - Images
 - Screenshots
-- Audio
+- Voice recordings
+- YouTube links
+- Web articles
 - URLs
-- Notes
 
-and later chat with all of their knowledge using Retrieval-Augmented Generation (RAG).
+BrainDump processes each piece of content using AI, stores semantic embeddings, and enables natural language conversations across the entire personal knowledge base.
 
 ---
 
-## Tech Stack
+# Tech Stack
 
-### Backend
+## Backend
 
-- FastAPI
+- Python 3.11+
+- FastAPI (Async)
 - PostgreSQL
 - SQLAlchemy Async
 - Alembic
-- Qdrant
 - Redis
 - Celery
+- Qdrant
 - LangChain
 - LangGraph
-- Groq
+- Groq API
 - Faster Whisper
-
-### Frontend
-
-- Next.js 14
-- TypeScript
-- TailwindCSS
-- shadcn/ui
+- Unstructured.io
 
 ---
 
-## Development Setup
+## Frontend
 
-Start the development databases:
+- Next.js 14
+- TypeScript
+- Tailwind CSS
+- shadcn/ui
+- Zustand
+- TanStack Query
+- Framer Motion
+
+---
+
+## AI Stack
+
+- BAAI/bge-m3 Embeddings
+- Groq LLMs
+- Faster Whisper
+- OCR
+- Hybrid Search
+- LangGraph Agents
+
+---
+
+# Project Structure
+
+```
+BrainDump/
+
+│
+
+├── backend/
+
+│ ├── app/
+
+│ │ ├── api/
+
+│ │ ├── core/
+
+│ │ ├── models/
+
+│ │ ├── schemas/
+
+│ │ ├── services/
+
+│ │ ├── rag/
+
+│ │ │ ├── ingestion/
+
+│ │ │ ├── embeddings/
+
+│ │ │ ├── retrieval/
+
+│ │ │ └── graph/
+
+│ │ ├── tasks/
+
+│ │ └── utils/
+
+│ │
+
+│ ├── tests/
+
+│ ├── requirements.txt
+
+│ └── Dockerfile
+
+│
+
+├── frontend/
+
+├── infra/
+
+│ └── docker-compose.dev.yml
+
+│
+
+├── .env
+
+├── .env.example
+
+├── .gitignore
+
+└── README.md
+```
+
+---
+
+# Development Workflow
+
+During development **only the databases run inside Docker**.
+
+The FastAPI backend runs locally using **uvicorn**.
+
+The Next.js frontend also runs locally using **npm run dev**.
+
+Application containerization will happen later during **Phase 3**.
+
+---
+
+# Prerequisites
+
+Install:
+
+- Docker Desktop
+- Python 3.11+
+- Git
+
+Verify installation:
+
+```bash
+docker --version
+
+python --version
+
+git --version
+```
+
+---
+
+# Clone Repository
+
+```bash
+git clone <repository-url>
+
+cd BrainDump
+```
+
+---
+
+# Start Development Databases
+
+Run:
 
 ```bash
 docker compose -f infra/docker-compose.dev.yml up -d
 ```
 
-Check containers:
+Verify:
 
 ```bash
 docker ps
 ```
 
-Later, the backend will be started with:
+You should see:
+
+- PostgreSQL
+- Redis
+- Qdrant
+
+running successfully.
+
+---
+
+# Create Python Virtual Environment
+
+Inside the backend folder:
 
 ```bash
-uvicorn app.main:app --reload
+cd backend
+
+python -m venv .venv
 ```
 
-The FastAPI application is intentionally **not** containerized during development. It runs locally and connects to the Dockerized PostgreSQL, Redis, and Qdrant services.
+Activate it:
 
-The frontend will also run locally during development.
+### Windows
 
-Application containerization will be completed during Phase 3.
+```bash
+.venv\Scripts\activate
+```
+
+### macOS / Linux
+
+```bash
+source .venv/bin/activate
+```
