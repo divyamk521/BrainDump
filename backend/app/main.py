@@ -1,18 +1,38 @@
+# BrainDump/backend/app/main.py
+
 """
-Main FastAPI application entry point.
+BrainDump FastAPI application.
+
+Initializes the FastAPI app, configures the application
+lifespan, verifies external service connectivity during
+startup, and exposes the API endpoints.
 """
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from qdrant_client import QdrantClient
-from sqlalchemy import text
 
-from app.api import router as api_router
 from app.core.config import settings
-from app.core.database import engine
+from app.core.database import check_database_connection
 
+# -------------------------------------------------------------------
+# Logging Configuration
+# -------------------------------------------------------------------
+
+logging.basicConfig(
+    level=settings.LOG_LEVEL,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+)
+
+logger = logging.getLogger(__name__)
+
+
+# -------------------------------------------------------------------
+# Lifespan
+# -------------------------------------------------------------------
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -20,65 +40,40 @@ async def lifespan(app: FastAPI):
     Application startup and shutdown lifecycle.
     """
 
-    print("\n==============================")
-    print("Starting BrainDump API...")
-    print("==============================\n")
+    logger.info("Starting BrainDump API...")
 
-    # PostgreSQL Connection Check
+    # -------------------------------------------------------------
+    # PostgreSQL
+    # -------------------------------------------------------------
+
     try:
-        async with engine.begin() as conn:
-            await conn.execute(text("SELECT 1"))
+        await check_database_connection()
+        logger.info("Connected to PostgreSQL OK")
 
-        print("Connected to PostgreSQL ✓")
+    except Exception as exc:
+        logger.exception("Failed to connect to PostgreSQL")
+        raise exc
 
-    except Exception as e:
-        print(f"Failed to connect to PostgreSQL ✗\n{e}")
+    # -------------------------------------------------------------
+    # Qdrant
+    # -------------------------------------------------------------
 
-    # Qdrant Connection Check
     try:
-        client = QdrantClient(
+        qdrant = QdrantClient(
             host=settings.QDRANT_HOST,
             port=settings.QDRANT_PORT,
-            api_key=settings.QDRANT_API_KEY or None,
         )
 
-        client.get_collections()
+        qdrant.get_collections()
 
-        print("Connected to Qdrant ✓")
+        logger.info("Connected to Qdrant OK")
 
-    except Exception as e:
-        print(f"Failed to connect to Qdrant ✗\n{e}")
+    except Exception as exc:
+        logger.exception("Failed to connect to Qdrant")
+        raise exc
+
+    logger.info("Application startup completed.")
 
     yield
 
-    print("\nShutting down BrainDump API...\n")
-
-
-app = FastAPI(
-    title="BrainDump API",
-    version="1.0.0",
-    lifespan=lifespan,
-)
-
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-@app.get("/health", tags=["Health"])
-async def health_check():
-    """
-    Health check endpoint.
-    """
-    return {
-        "status": "ok",
-        "version": "1.0.0",
-    }
-
-
-app.include_router(api_router)
+    logger.info("Shutting down BrainDump API...")
